@@ -648,7 +648,11 @@ Walkthrough, matching the real code path in `src/lib.rs` / `src/engine.rs`:
    ledger time are loaded. No policy stored ⇒ `NoPolicy` — the account is default-deny.
 3. **Account-level gates** (in this order): admin freeze, dead-man switch (grace elapsed
    since last heartbeat), pause, active window. Any one firing rejects the transaction
-   regardless of what the call is.
+   regardless of what the call is. Every context in the transaction is evaluated against
+   the pre-transaction snapshot, so the dead-man gate evaluates the pre-transaction
+   heartbeat for every context in the transaction, including the heartbeat self-call — a
+   bundle of `[heartbeat, transfer]` against an expired account is judged against the
+   expired state and blocked, never updating `LastHeartbeat`.
 4. **Per-context classification.** `parse_call` turns each `Context` into a typed call:
    `SelfCall` (only `heartbeat` is allowed), `CreateContract` (denied in v1),
    `Unknown`/`AssetOther` (denied), `AssetTransfer` (a known SAC transfer with parsed
